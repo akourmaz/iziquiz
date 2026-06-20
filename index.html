@@ -555,17 +555,17 @@ function renderResult() {
   window.__intake = JSON.stringify(intake, null, 2);
   window.__summary = buildSummary(intake);
   root.innerHTML = `<div class="card result">
-    <h2>Почти готово</h2>
-    <p class="hint">Отправьте заявку — мы подберём подходящие варианты и пришлём вам подборку.</p>
-    <div id="sendBox">
-      <button class="primary" id="sendBtn" style="width:100%" onclick="submitLead()">Отправить заявку</button>
-      <button class="ghost" style="margin-top:10px" onclick="idx=0;render()">← Пройти заново</button>
-    </div></div>`;
+    <h2 id="rTitle">Спасибо!</h2>
+    <p class="hint" id="rText">Отправляем вашу заявку…</p>
+    <div id="sendBox"></div></div>`;
+  sendLead();   // авто-отправка сразу после последнего вопроса
 }
 
-async function submitLead() {
-  const btn = document.getElementById('sendBtn');
-  btn.disabled = true; btn.textContent = 'Отправляем…';
+async function sendLead() {
+  const txt = document.getElementById('rText');
+  const box = document.getElementById('sendBox');
+  box.innerHTML = '';
+  txt.textContent = 'Отправляем вашу заявку…';
   try {
     const r = await fetch('/api/submit', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -573,23 +573,25 @@ async function submitLead() {
     });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.ok) {
-      document.getElementById('sendBox').innerHTML =
-        '<p class="q">Заявка отправлена</p><p class="hint">Спасибо! Мы свяжемся с вами с подборкой.</p>';
+      document.getElementById('rTitle').textContent = 'Заявка отправлена';
+      txt.textContent = 'Спасибо! Мы подберём подходящие варианты и пришлём вам подборку. Скоро будем на связи.';
       return;
     }
-    btn.disabled = false; btn.textContent = 'Отправить ещё раз';
-    showErr(d.error === 'no_chat_id'
-      ? 'Бот ещё не активирован: напишите боту /start и повторите.'
-      : 'Не удалось отправить: ' + (d.error || r.status));
+    showRetry(d.error === 'no_chat_id'
+      ? 'Бот ещё не активирован: напишите боту /start и попробуйте ещё раз.'
+      : 'Не удалось отправить автоматически: ' + (d.error || r.status));
   } catch (e) {
-    btn.disabled = false; btn.textContent = 'Отправить ещё раз';
-    showErr('Нет связи с сервером. Откройте анкету по ссылке, а не как файл.');
+    showRetry('Нет связи с сервером — попробуйте ещё раз.');
   }
 }
-function showErr(m) {
-  let e = document.getElementById('err');
-  if (!e) { e = document.createElement('div'); e.id = 'err'; e.className = 'warn'; document.getElementById('sendBox').appendChild(e); }
-  e.textContent = m;
+
+function showRetry(msg) {
+  document.getElementById('rTitle').textContent = 'Почти готово';
+  document.getElementById('rText').textContent = 'Не получилось отправить автоматически.';
+  document.getElementById('sendBox').innerHTML =
+    '<button class="primary" style="width:100%" onclick="sendLead()">Отправить ещё раз</button>' +
+    '<div class="warn" id="err" style="margin-top:10px"></div>';
+  document.getElementById('err').textContent = msg;
 }
 
 render();
