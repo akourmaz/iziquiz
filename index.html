@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IZIHome — анкета подбора</title>
+<style>
+  :root {
+    --bg: #faf8f5; --card: #ffffff; --ink: #1c1a17; --muted: #8a8278;
+    --line: #e7e1d8; --gold: #b08d57; --gold-soft: #f3ecdf;
+    --shadow: 0 1px 2px rgba(28,26,23,.04), 0 8px 30px rgba(28,26,23,.06);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; }
+  header { text-align: center; margin-bottom: 28px; }
+  .brand { font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
+  .brand b { color: var(--ink); font-weight: 600; }
+  .tagline { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .progress { height: 3px; background: var(--line); border-radius: 3px; margin: 22px 0 6px; overflow: hidden; }
+  .progress > span { display: block; height: 100%; background: var(--gold); width: 0; transition: width .3s ease; }
+  .step-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 24px; box-shadow: var(--shadow); }
+  .q { font-size: 21px; font-weight: 600; margin: 0 0 4px; letter-spacing: -.01em; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+  .opts { display: grid; gap: 10px; }
+  .opt { display: flex; align-items: center; gap: 12px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 11px; padding: 14px 16px; min-height: 52px;
+    transition: border-color .15s, background .15s; user-select: none;
+    -webkit-tap-highlight-color: transparent; }
+  .opt:hover { border-color: var(--gold); }
+  .opt.sel { border-color: var(--gold); background: var(--gold-soft); }
+  .opt .tick { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line);
+    flex: 0 0 auto; display: grid; place-items: center; }
+  .opt.multi .tick { border-radius: 5px; }
+  .opt.sel .tick { border-color: var(--gold); background: var(--gold); }
+  .opt.sel .tick::after { content: ""; width: 7px; height: 7px; border-radius: 2px; background: #fff; }
+  .opt .label { font-size: 15px; }
+  .opt .sub { color: var(--muted); font-size: 12.5px; }
+  .opt.soft { border-style: dashed; }
+  .opt.soft .label { color: var(--muted); }
+  .warn { background:#fbf6ee; border:1px solid var(--gold-soft); border-left:3px solid var(--gold);
+    border-radius:8px; padding:10px 13px; font-size:13px; color:#6b5a3c; margin:14px 0 0; }
+  .pair { display: flex; gap: 12px; flex-wrap: wrap; }
+  .field { flex: 1 1 140px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input[type=number], input[type=text], textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 13px; font-size: 16px; font-family: inherit; background: #fff; color: var(--ink); }
+  input:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  textarea { min-height: 92px; resize: vertical; }
+  .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; gap: 12px; }
+  button { font-family: inherit; font-size: 15px; cursor: pointer; border-radius: 10px;
+    padding: 12px 22px; border: 1px solid var(--line); background: #fff; color: var(--ink); transition: .15s; }
+  button:hover { border-color: var(--gold); }
+  button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.primary:hover { background: #000; }
+  button.ghost { border: none; color: var(--muted); padding-left: 4px; }
+  button:disabled { opacity: .4; cursor: default; }
+  .badge { display:inline-block; font-size:11px; letter-spacing:.04em; color:var(--gold);
+    background:var(--gold-soft); border-radius:20px; padding:3px 10px; margin-bottom:14px; }
+  .result h2 { font-size: 22px; margin: 0 0 4px; }
+  pre { background: #1c1a17; color: #e7e1d8; border-radius: 12px; padding: 18px;
+    font-size: 12.5px; line-height: 1.6; overflow: auto; margin: 16px 0 0; }
+  .pre-key { color: var(--gold); } .pre-str { color: #b6c8a9; }
+  .pre-num { color: #d8a8a0; } .pre-null { color: #6f6a62; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 14px; }
+  code { background:#f3ecdf; border-radius:4px; padding:1px 5px; font-size:12.5px; }
+
+  /* ── мобильная адаптация (клиент проходит с телефона) ── */
+  @media (max-width: 600px) {
+    .wrap { padding: 14px 12px calc(20px + env(safe-area-inset-bottom)); }
+    header { margin-bottom: 16px; }
+    .brand { font-size: 11.5px; letter-spacing: .16em; }
+    .tagline { font-size: 13px; }
+    .progress { position: sticky; top: 0; z-index: 5; margin: 8px 0 6px; }
+    .card { padding: 20px 16px; border-radius: 12px; }
+    .q { font-size: 19px; }
+    .hint { font-size: 13.5px; margin-bottom: 16px; }
+    .opt { padding: 14px; }
+    .opt .tick { width: 22px; height: 22px; }
+    /* липкая навигация внизу карточки + safe-area */
+    .nav { position: sticky; bottom: 0; z-index: 5; gap: 10px;
+      background: linear-gradient(to top, var(--card) 78%, rgba(255,255,255,0));
+      margin: 22px -16px -20px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line); }
+    .nav button.primary { flex: 1; padding: 15px 18px; }
+    .nav button.ghost { padding: 15px 8px; }
+    .field { flex: 1 1 110px; }
+    pre { font-size: 11.5px; padding: 14px; }
+  }
+  @media (max-width: 360px) {
+    .field { flex: 1 1 100%; }
+    .q { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><b>IZI</b>Home · подбор недвижимости</div>
+    <div class="tagline">Несколько вопросов — и соберём варианты под вас</div>
+  </header>
+  <div class="progress"><span id="bar"></span></div>
+  <div class="step-meta"><span id="stepNo"></span><span id="branchTag"></span></div>
+  <noscript>
+    <div class="card"><p class="q">Откройте в браузере</p>
+    <p class="hint">Анкета интерактивная и требует включённого JavaScript. Если вы открыли файл из мессенджера и видите только это сообщение — нажмите «Открыть в Safari / Chrome» (или откройте ссылку, а не файл).</p></div>
+  </noscript>
+  <div id="root"></div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ *  Анкета подбора — data-driven wizard (v2, чистые оси объекта).
+ *  Оси разведены: тип объекта · комнатность · стадия дома · отделка.
+ *  Только квартиры/апартаменты (дом-ветка отложена).
+ *  На выходе intake.json — контракт для select.js (brief + filters).
+ * ------------------------------------------------------------------ */
+const state = {};
+const SOFT = (label) => ({ value: '__any', label, soft: true });
+
+const STEPS = [
+  // ── 0. РАЗВИЛКА ИНТЕНТА ──
+  { id: 'goal', type: 'single', branch: 'both',
+    q: 'С какой целью подбираем объект?',
+    hint: 'От этого зависят дальнейшие вопросы',
+    options: [
+      { value: 'pmj',    label: 'Для жизни',      sub: 'Сам(и) будете жить' },
+      { value: 'invest', label: 'Под инвестицию', sub: 'Сдавать или перепродать' },
+    ] },
+
+  // ── ОСЬ 1. ТИП ОБЪЕКТА (общий) ──
+  { id: 'property_type', type: 'single', branch: 'both',
+    q: 'Какой тип объекта рассматриваете?',
+    options: [
+      { value: 'apartment',  label: 'Квартира в жилом доме', sub: 'обычная жизнь, возможна прописка' },
+      { value: 'aparthotel', label: 'Апартаменты (апарт-отель)', sub: 'сервис и УК, гостиничный режим' },
+      SOFT('Покажите разные варианты'),
+    ] },
+
+  // ── ОСЬ 2. КОМНАТНОСТЬ (общий; студия живёт здесь) ──
+  { id: 'rooms', type: 'single', branch: 'both',
+    q: 'Сколько спален нужно?',
+    hint: 'Студия — это отдельный вариант без спальни',
+    options: [
+      { value: 'studio', label: 'Студия', sub: 'единое пространство без спальни' },
+      { value: '1', label: '1 спальня' },
+      { value: '2', label: '2 спальни' },
+      { value: '3', label: '3 спальни' },
+      { value: '4', label: '4 и больше' },
+      SOFT('Предложите разные варианты'),
+    ],
+    suggest: (s) => (s.goal === 'invest' ? 'studio' : null),   // под аренду оптимум — студия
+    hintBranch: { invest: 'Под аренду чаще оптимальны студия / 1 спальня — подсветили' } },
+
+  // ── ОСЬ 3. СТАДИЯ ДОМА (общий; заменяет «новостройка/обжитой») ──
+  { id: 'stage', type: 'single', branch: 'both',
+    q: 'На какой стадии дом?',
+    options: [
+      { value: 'secondary', label: 'Вторичка',           sub: 'дом готов и заселён' },
+      { value: 'new_done',  label: 'Новостройка сдана',   sub: 'построена, можно заезжать' },
+      { value: 'offplan',   label: 'Строится (off-plan)', sub: 'дешевле и рассрочка, но ждать сдачи' },
+      SOFT('Неважно'),
+    ] },
+
+  // ── ОСЬ 4. ОТДЕЛКА (общий; 3 уровня, мульти) ──
+  { id: 'condition', type: 'multi', branch: 'both',
+    q: 'Состояние отделки?',
+    hint: 'Можно выбрать несколько',
+    options: [
+      { value: 'turnkey',  label: 'Под ключ',        sub: 'с ремонтом, заехать сразу' },
+      { value: 'cosmetic', label: 'Нужен ремонт',    sub: 'жилое, но обновить' },
+      { value: 'frame',    label: 'Каркас с нуля',   sub: 'белый / чёрный каркас, под отделку' },
+      SOFT('Покажите все'),
+    ] },
+  { id: 'reno_budget', type: 'single', branch: 'both',
+    q: 'Ремонт — в рамках бюджета или сверху?',
+    showIf: (s) => Array.isArray(s.condition) && (s.condition.includes('frame') || s.condition.includes('cosmetic')),
+    options: [
+      { value: 'within', label: 'В рамках бюджета', sub: 'цена объекта ниже, на ремонт остаётся' },
+      { value: 'on_top', label: 'Ремонт сверху',    sub: 'бюджет — только покупка' },
+    ] },
+
+  // ── ПЛОЩАДЬ (общий) ──
+  { id: 'area', type: 'area', branch: 'both',
+    q: 'Минимальная площадь?',
+    hint: 'Если не знаете — пропустите, покажем разные' },
+
+  // ── ЛОКАЦИЯ-ЯКОРЬ (по ветке) ──
+  { id: 'location', type: 'multi', branch: 'pmj',
+    q: 'Что важно по расположению?',
+    hint: 'Можно выбрать несколько — район подберём сами',
+    options: [
+      { value: 'sea',    label: 'У моря' },
+      { value: 'quiet',  label: 'Тихий район' },
+      { value: 'center', label: 'Центр, всё рядом' },
+      { value: 'school', label: 'Рядом со школой / садиком' },
+      SOFT('Ещё не определился — предложите'),
+    ] },
+  { id: 'location', type: 'multi', branch: 'invest',
+    q: 'Локация под доход?',
+    hint: 'Можно выбрать несколько',
+    options: [
+      { value: 'sea',     label: 'Первая линия / у моря' },
+      { value: 'tourist', label: 'Турзона, высокий поток' },
+      { value: 'center',  label: 'Центр' },
+      SOFT('Неважно, по доходности'),
+    ] },
+
+  // ── ВИД (ПМЖ) ──
+  { id: 'view', type: 'multi', branch: 'pmj',
+    q: 'Вид из окон?',
+    options: [
+      { value: 'sea',   label: 'Море' },
+      { value: 'mount', label: 'Горы' },
+      { value: 'city',  label: 'Город' },
+      { value: 'yard',  label: 'Тихий двор' },
+      SOFT('Неважно'),
+    ] },
+
+  // ── ЭТАЖ (общий — у квартир и апартов есть этаж) ──
+  { id: 'floor', type: 'multi', branch: 'both',
+    q: 'Пожелания по этажу?',
+    options: [
+      { value: 'not_first', label: 'Не первый этаж' },
+      { value: 'not_last',  label: 'Не последний этаж' },
+      { value: 'lift',      label: 'Нужен лифт' },
+      SOFT('Неважно'),
+    ] },
+
+  // ── ИНВЕСТ-БЛОК ──
+  { id: 'horizon', type: 'single', branch: 'invest',
+    q: 'Стратегия?',
+    options: [
+      { value: 'hold',      label: 'Держать и сдавать' },
+      { value: 'flip',      label: 'Перепродать через 1–2 года' },
+      { value: 'undecided', label: 'Пока не решил(а)' },
+    ] },
+  { id: 'rental_type', type: 'single', branch: 'invest',
+    q: 'Какая аренда планируется?',
+    showIf: (s) => s.horizon === 'hold' || s.horizon === 'undecided',
+    options: [
+      { value: 'short', label: 'Краткосрок', sub: 'посуточно, туристы' },
+      { value: 'long',  label: 'Долгосрок',  sub: 'на месяцы' },
+      { value: 'both',  label: 'Как выгоднее' },
+    ] },
+  { id: 'yield', type: 'single', branch: 'invest',
+    q: 'Что в приоритете по доходу?',
+    options: [
+      { value: 'max',     label: 'Максимум доходности' },
+      { value: 'stable',  label: 'Стабильность / ликвидность' },
+      { value: 'unknown', label: 'Не считал — посоветуйте', soft: true },
+    ] },
+  { id: 'bargain', type: 'single', branch: 'invest',
+    q: 'Готовы торговаться?',
+    options: [
+      { value: 'yes', label: 'Да, ищем ниже рынка' },
+      { value: 'no',  label: 'Нет, важнее объект' },
+    ] },
+
+  // ── БЮДЖЕТ + ОПЛАТА (общий) ──
+  { id: 'budget', type: 'budget', branch: 'both',
+    q: 'Бюджет покупки',
+    hint: 'Укажите потолок; коридор поможет точнее отсечь' },
+  { id: 'financing', type: 'single', branch: 'both',
+    q: 'Способ оплаты?',
+    options: [
+      { value: 'cash',        label: 'Наличные / перевод' },
+      { value: 'mortgage',    label: 'Ипотека' },
+      { value: 'installment', label: 'Рассрочка застройщика' },
+      { value: null,          label: 'Пропустить', soft: true },
+    ] },
+
+  // ── СРОЧНОСТЬ (ПМЖ) ──
+  { id: 'timeline', type: 'single', branch: 'pmj',
+    q: 'Когда планируете заехать?',
+    options: [
+      { value: 'now',   label: 'Как можно скорее' },
+      { value: '3_6m',  label: 'В ближайшие 3–6 мес' },
+      { value: 'later', label: 'Не горит, выбираю' },
+    ] },
+
+  // ── ВОПРОС-РАЗМЕН (по ветке) ──
+  { id: 'priority', type: 'single', branch: 'pmj',
+    q: 'Если идеального не найдём — чем готовы пожертвовать?',
+    hint: 'Поможет отобрать лучшее из реального',
+    options: [
+      { value: 'area',      label: 'Площадью' },
+      { value: 'condition', label: 'Ремонтом' },
+      { value: 'location',  label: 'Районом' },
+      { value: 'price',     label: 'Чуть поднять бюджет' },
+      { value: 'none',      label: 'Ничем — лучше подожду' },
+    ] },
+  { id: 'priority', type: 'single', branch: 'invest',
+    q: 'Если идеального не найдём — что главное сохранить?',
+    options: [
+      { value: 'yield',    label: 'Доходность' },
+      { value: 'location', label: 'Локацию' },
+      { value: 'price',    label: 'Цену входа' },
+      { value: 'ready',    label: 'Готовность под сдачу' },
+    ] },
+
+  // ── ХВОСТ (общий, необязательный) ──
+  { id: 'extras', type: 'multi', branch: 'both', optional: true,
+    q: 'Хотите уточнить детали? (необязательно)',
+    hint: 'Не сузит выбор — поможет отсортировать',
+    options: [
+      { value: 'furniture', label: 'Мебель / техника' },
+      { value: 'parking',   label: 'Парковка' },
+      { value: 'balcony',   label: 'Балкон / терраса' },
+    ] },
+  { id: 'notes', type: 'text', branch: 'both', optional: true,
+    q: 'Особые пожелания?',
+    hint: 'Любые детали своими словами — солнечная сторона, конкретный ЖК, рядом с близкими…' },
+  { id: 'source', type: 'single', branch: 'both', optional: true,
+    q: 'Откуда узнали о нас?',
+    options: [
+      { value: 'instagram', label: 'Instagram' },
+      { value: 'referral',  label: 'Посоветовали' },
+      { value: 'google',    label: 'Поиск / Google' },
+      { value: 'other',     label: 'Другое' },
+      { value: null,        label: 'Пропустить', soft: true },
+    ] },
+];
+
+// ── ДВИЖОК ──
+let idx = 0;
+const root = document.getElementById('root');
+
+function activeSteps() {
+  const g = state.goal;
+  return STEPS.filter(st =>
+    (st.branch === 'both' || st.branch === g || (!g && st.id === 'goal')) &&
+    (!st.showIf || st.showIf(state)));
+}
+
+function render() {
+  const steps = activeSteps();
+  if (idx >= steps.length) return renderResult();
+  const st = steps[idx];
+  document.getElementById('bar').style.width = (idx / steps.length * 100) + '%';
+  document.getElementById('stepNo').textContent = `Шаг ${idx + 1} из ${steps.length}`;
+  document.getElementById('branchTag').textContent =
+    state.goal === 'pmj' ? 'Для жизни' : state.goal === 'invest' ? 'Инвестиция' : '';
+
+  const hint = (st.hintBranch && st.hintBranch[state.goal]) || st.hint;
+  let body = `<div class="card">`;
+  if (st.optional) body += `<span class="badge">необязательно</span>`;
+  body += `<p class="q">${st.q}</p>`;
+  if (hint) body += `<p class="hint">${hint}</p>`;
+  body += renderInput(st);
+  const note = st.note ? st.note(state) : null;
+  if (note) body += `<div class="warn">${note}</div>`;
+  body += `<div class="nav">
+      <button class="ghost" ${idx === 0 ? 'disabled' : ''} onclick="back()">← Назад</button>
+      <button class="primary" onclick="next()">${idx === steps.length - 1 ? 'Готово' : 'Далее →'}</button>
+    </div></div>`;
+  root.innerHTML = body;
+  bind(st);
+}
+
+function renderInput(st) {
+  const v = state[st.id];
+  if (st.type === 'single') {
+    const sug = st.suggest ? st.suggest(state) : null;
+    return `<div class="opts">` + st.options.map(o => {
+      const sel = v === o.value;
+      const isSug = sug != null && o.value === sug && v == null;
+      return `<div class="opt ${o.soft ? 'soft' : ''} ${sel ? 'sel' : ''}" data-v='${JSON.stringify(o.value)}'>
+        <span class="tick"></span>
+        <span><span class="label">${o.label}${isSug ? ' · рекомендуем' : ''}</span>${o.sub ? `<br><span class="sub">${o.sub}</span>` : ''}</span>
+      </div>`; }).join('') + `</div>`;
+  }
+  if (st.type === 'multi') {
+    const arr = Array.isArray(v) ? v : [];
+    return `<div class="opts">` + st.options.map(o => {
+      const sel = arr.includes(o.value);
+      return `<div class="opt multi ${o.soft ? 'soft' : ''} ${sel ? 'sel' : ''}" data-v='${JSON.stringify(o.value)}'>
+        <span class="tick"></span>
+        <span><span class="label">${o.label}</span>${o.sub ? `<br><span class="sub">${o.sub}</span>` : ''}</span>
+      </div>`; }).join('') + `</div>`;
+  }
+  if (st.type === 'household') {
+    const h = v || {};
+    return `<div class="pair">
+      <div class="field"><label>Взрослых</label><input type="number" min="0" id="h_ad" value="${h.adults ?? ''}" placeholder="2"></div>
+      <div class="field"><label>Детей</label><input type="number" min="0" id="h_ch" value="${h.children ?? ''}" placeholder="0"></div>
+      <div class="field"><label>Возраст детей</label><input type="text" id="h_ages" value="${h.ages ?? ''}" placeholder="напр. 5, 9"></div>
+    </div>`;
+  }
+  if (st.type === 'area') {
+    const a = v || {};
+    return `<div class="pair">
+      <div class="field"><label>Минимум, м²</label><input type="number" min="0" id="area_min" value="${a.min ?? ''}" placeholder="60"></div>
+    </div><div class="opts" style="margin-top:10px">
+      <div class="opt soft ${a.any ? 'sel' : ''}" data-area-any="1"><span class="tick"></span><span class="label">Предложите разные варианты</span></div>
+    </div>`;
+  }
+  if (st.type === 'budget') {
+    const b = v || {};
+    return `<div class="pair">
+      <div class="field"><label>Комфортный потолок, $</label><input type="number" id="b_max" value="${b.max ?? ''}" placeholder="115000"></div>
+    </div><div class="pair" style="margin-top:10px">
+      <div class="field"><label>Коридор от, $ (опц.)</label><input type="number" id="b_min" value="${b.min ?? ''}" placeholder="90000"></div>
+      <div class="field"><label>до, $ (опц.)</label><input type="number" id="b_top" value="${b.top ?? ''}" placeholder="115000"></div>
+    </div>`;
+  }
+  if (st.type === 'text') return `<textarea id="ta" placeholder="Напишите здесь…">${v ?? ''}</textarea>`;
+  if (st.type === 'contact') {
+    const c = v || {};
+    return `<div class="pair">
+      <div class="field"><label>Имя</label><input type="text" id="c_name" value="${c.name ?? ''}" placeholder="Как к вам обращаться"></div>
+      <div class="field"><label>WhatsApp / телефон</label><input type="text" id="c_phone" value="${c.phone ?? ''}" placeholder="+995…"></div>
+    </div>`;
+  }
+  return '';
+}
+
+function bind(st) {
+  if (st.type === 'single') {
+    root.querySelectorAll('.opt').forEach(el => el.onclick = () => {
+      state[st.id] = JSON.parse(el.dataset.v);
+      st.note ? render() : next();   // если есть пояснение — показать, не перескакивать
+    });
+  }
+  if (st.type === 'multi') {
+    root.querySelectorAll('.opt').forEach(el => el.onclick = () => {
+      const val = JSON.parse(el.dataset.v);
+      let arr = Array.isArray(state[st.id]) ? [...state[st.id]] : [];
+      if (val === '__any') arr = arr.includes('__any') ? [] : ['__any'];
+      else { arr = arr.filter(x => x !== '__any'); arr.includes(val) ? arr = arr.filter(x => x !== val) : arr.push(val); }
+      state[st.id] = arr; render();
+    });
+  }
+  if (st.type === 'area') {
+    const any = root.querySelector('[data-area-any]');
+    if (any) any.onclick = () => { state[st.id] = { any: !(state[st.id]?.any) }; render(); };
+  }
+}
+
+function collect(st) {
+  if (st.type === 'household') state[st.id] = { adults: num('h_ad'), children: num('h_ch'), ages: val('h_ages') || null };
+  if (st.type === 'area' && !state[st.id]?.any) { const m = num('area_min'); state[st.id] = m != null ? { min: m } : null; }
+  if (st.type === 'budget') state[st.id] = { max: num('b_max'), min: num('b_min'), top: num('b_top') };
+  if (st.type === 'text') state[st.id] = val('ta') || null;
+  if (st.type === 'contact') state[st.id] = { name: val('c_name') || null, phone: val('c_phone') || null };
+}
+const num = (id) => { const e = document.getElementById(id); return e && e.value !== '' ? +e.value : null; };
+const val = (id) => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+
+function next() { const steps = activeSteps(); collect(steps[idx]); idx++; render(); }
+function back() { collect(activeSteps()[idx]); idx--; render(); }
+
+// ── СБОРКА intake.json (контракт подборщика) ──
+function buildIntake() {
+  const s = state, g = s.goal;
+  const soft = (x) => (x === '__any' || x == null ? null : x);
+  const multi = (x) => (Array.isArray(x) ? x.filter(v => v !== '__any') : []);
+  const roomsToBedrooms = (r) => r === 'studio' ? 0 : (r === '__any' || r == null ? null : +r);
+
+  const out = {
+    goal: g,
+    deal_type: 'sale',
+    property_type: soft(s.property_type),       // apartment | aparthotel | null(any)
+    rooms: soft(s.rooms),                        // studio | 1..4 | null
+    bedrooms_min: roomsToBedrooms(s.rooms),      // студия=0; для SQL-среза
+    stage: soft(s.stage),                        // secondary | new_done | offplan | null
+    condition: multi(s.condition),               // [turnkey|cosmetic|frame]
+    reno_budget: s.reno_budget ?? null,
+    area_m2_min: s.area?.any ? null : (s.area?.min ?? null),
+    location: multi(s.location),
+    floor: multi(s.floor),
+    budget: s.budget ? {
+      max: s.budget.max ?? null,
+      corridor: (s.budget.min != null && s.budget.top != null) ? [s.budget.min, s.budget.top] : null,
+      financing: s.financing ?? null,
+      flexible: s.bargain === 'yes' || s.priority === 'price' || null,
+    } : null,
+    priority: s.priority ?? null,
+    extras: multi(s.extras),
+    notes: s.notes ?? null,
+    source: s.source ?? null,
+  };
+  if (g === 'pmj') {
+    out.view = multi(s.view);
+    out.timeline = s.timeline ?? null;
+  }
+  if (g === 'invest') {
+    out.invest = {
+      horizon: s.horizon ?? null,
+      rental_type: s.rental_type ?? null,
+      yield_priority: s.yield ?? null,
+    };
+  }
+  return out;
+}
+
+function colorize(json) {
+  return json
+    .replace(/("(\\.|[^"])*")(\s*:)/g, '<span class="pre-key">$1</span>$3')
+    .replace(/:\s*("(\\.|[^"])*")/g, ': <span class="pre-str">$1</span>')
+    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="pre-num">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="pre-null">$1</span>');
+}
+
+// ── человекочитаемая карточка лида для Telegram ──
+function stepFor(id) { const g = state.goal; return STEPS.find(s => s.id === id && (s.branch === 'both' || s.branch === g) && s.options); }
+function labelOf(id, val) { const s = stepFor(id); if (!s) return val; const o = s.options.find(o => o.value === val); return o ? o.label : val; }
+function labelsOf(id, arr) { return (arr || []).map(v => labelOf(id, v)).join(', '); }
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function buildSummary(o) {
+  const L = [];
+  L.push('<b>Новая заявка на подбор</b>');
+  L.push(`Цель: <b>${o.goal === 'pmj' ? 'Для жизни' : 'Инвестиция'}</b>`);
+  if (o.property_type) L.push(`Тип: ${labelOf('property_type', o.property_type)}`);
+  if (o.rooms) L.push(`Комнатность: ${labelOf('rooms', o.rooms)}`);
+  if (o.stage) L.push(`Стадия дома: ${labelOf('stage', o.stage)}`);
+  if (o.condition?.length) L.push(`Отделка: ${labelsOf('condition', o.condition)}`);
+  if (o.reno_budget) L.push(`Ремонт: ${o.reno_budget === 'within' ? 'в рамках бюджета' : 'сверху'}`);
+  if (o.area_m2_min) L.push(`Площадь от: ${o.area_m2_min} м²`);
+  if (o.location?.length) L.push(`Локация: ${labelsOf('location', o.location)}`);
+  if (o.floor?.length) L.push(`Этаж: ${labelsOf('floor', o.floor)}`);
+  if (o.view?.length) L.push(`Вид: ${labelsOf('view', o.view)}`);
+  if (o.budget) {
+    const b = o.budget; let s = b.max ? `до $${b.max}` : '';
+    if (b.corridor) s += ` (коридор $${b.corridor[0]}–$${b.corridor[1]})`;
+    if (b.financing) s += `, ${labelOf('financing', b.financing)}`;
+    if (s) L.push(`Бюджет: ${s}`);
+  }
+  if (o.timeline) L.push(`Срок: ${labelOf('timeline', o.timeline)}`);
+  if (o.invest) {
+    const i = o.invest;
+    if (i.horizon) L.push(`Стратегия: ${labelOf('horizon', i.horizon)}`);
+    if (i.rental_type) L.push(`Аренда: ${labelOf('rental_type', i.rental_type)}`);
+    if (i.yield_priority) L.push(`Доход: ${labelOf('yield', i.yield_priority)}`);
+  }
+  if (o.priority) L.push(`Приоритет/размен: ${labelOf('priority', o.priority)}`);
+  if (o.extras?.length) L.push(`Доп.: ${labelsOf('extras', o.extras)}`);
+  if (o.notes) L.push(`Пожелания: <i>${esc(o.notes)}</i>`);
+  if (o.source) L.push(`Источник: ${labelOf('source', o.source)}`);
+  return L.join('\n');
+}
+
+function renderResult() {
+  document.getElementById('bar').style.width = '100%';
+  document.getElementById('stepNo').textContent = 'Готово';
+  document.getElementById('branchTag').textContent = '';
+  const intake = buildIntake();
+  window.__intake = JSON.stringify(intake, null, 2);
+  window.__summary = buildSummary(intake);
+  root.innerHTML = `<div class="card result">
+    <h2>Почти готово</h2>
+    <p class="hint">Отправьте заявку — мы подберём подходящие варианты и пришлём вам подборку.</p>
+    <div id="sendBox">
+      <button class="primary" id="sendBtn" style="width:100%" onclick="submitLead()">Отправить заявку</button>
+      <button class="ghost" style="margin-top:10px" onclick="idx=0;render()">← Пройти заново</button>
+    </div></div>`;
+}
+
+async function submitLead() {
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  try {
+    const r = await fetch('/api/submit', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: window.__summary, intake: JSON.parse(window.__intake) }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) {
+      document.getElementById('sendBox').innerHTML =
+        '<p class="q">Заявка отправлена</p><p class="hint">Спасибо! Мы свяжемся с вами с подборкой.</p>';
+      return;
+    }
+    btn.disabled = false; btn.textContent = 'Отправить ещё раз';
+    showErr(d.error === 'no_chat_id'
+      ? 'Бот ещё не активирован: напишите боту /start и повторите.'
+      : 'Не удалось отправить: ' + (d.error || r.status));
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Отправить ещё раз';
+    showErr('Нет связи с сервером. Откройте анкету по ссылке, а не как файл.');
+  }
+}
+function showErr(m) {
+  let e = document.getElementById('err');
+  if (!e) { e = document.createElement('div'); e.id = 'err'; e.className = 'warn'; document.getElementById('sendBox').appendChild(e); }
+  e.textContent = m;
+}
+
+render();
+</script>
+</body>
+</html>

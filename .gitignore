@@ -1,0 +1,12 @@
+# Node / Vercel
+node_modules/
+.vercel/
+
+# Secrets — НИКОГДА не коммитим (токен живёт в env Vercel)
+.env
+.env.*
+*.local.json
+
+# OS
+.DS_Store
+Thumbs.db
